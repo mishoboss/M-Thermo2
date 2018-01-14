@@ -6,12 +6,12 @@ This is a very simple firmware for a ESP8266 (WEMOS D1 mini) based thermostat, u
 ## Hardware
 
 - WEMOS D1 mini
-- STU21/SHT21 temperature & humidity sensor
+- SHT21/HTU21 temperature & humidity sensor
 - WEMOS Relay shield
 - WEMOS OLED shield
 - 220V AC to 5V DC power supply module (not mandatory for the project)
 
-There are no PCB schematics, as its pretty straightforward using the WEMOS shields. Only possible places for mistakes are the buttons and the STU21/SHT21 sensor. Pins for buttons are defined on lines 76 and 77. And STU21/SHT21 sensor uses I2C, so it needs to be hooked on SCA and SCL pins of the ESP.
+There are no PCB schematics, as its pretty straightforward using the WEMOS shields. Only possible places for mistakes are the buttons and the SHT21/HTU21 sensor. Pins for buttons are defined on lines 76 and 77. And SHT21/HTU21 sensor uses I2C, so it needs to be hooked on SCA and SCL pins of the ESP.
 
 ## Software
 
