@@ -25,4 +25,5 @@ Edit `update.sh` to replace `deviceid` with the targeted Homie ID. Then run `upd
 ### Shiny video of how I did my thermostats
 
 Because why not?
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=8D_6tFGS0JA" target="_blank"><img src="http://img.youtube.com/vi/8D_6tFGS0JA/0.jpg" alt="M-THERMO 2.0 Video" width="240" height="180" border="10" /></a>
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=8D_6tFGS0JA" target="_blank"><img src="http://img.youtube.com/vi/8D_6tFGS0JA/0.jpg" alt="M-THERMO 2.0 Video" width="480" height="320" border="10" /></a>
