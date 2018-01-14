@@ -6,23 +6,23 @@ This is a very simple firmware for a ESP8266 (WEMOS D1 mini) based thermostat, u
 ## Hardware
 
 - WEMOS D1 mini
-- SHT21 temperature & humidity sensor
+- STU21/SHT21 temperature & humidity sensor
 - WEMOS Relay shield
 - WEMOS OLED shield
 - 220V AC to 5V DC power supply module (not mandatory for the project)
 
-There are no PCB schematics, as its pretty straightforward using the WEMOS shields. The only possible place for improvisation are the pins for the two buttons. They are defined on lines 76 and 77.
+There are no PCB schematics, as its pretty straightforward using the WEMOS shields. Only possible places for mistakes are the buttons and the STU21/SHT21 sensor. Pins for buttons are defined on lines 76 and 77. And STU21/SHT21 sensor uses I2C, so it needs to be hooked on SCA and SCL pins of the ESP.
 
-### Software
+## Software
 
 There is a simple Mosca MQTT broker in the "mosca" folder. You can run it by first running `npm install` (to install node modules) and then `node index`. It expects MongoDB installed and running.
 
-### OTA
+## OTA
 
 Edit `update.sh` to replace `deviceid` with the targeted Homie ID. Then run `update.sh` in console. The update script expects a compiled `bin` binary file inside M-Thermo folder (`esp_firmware/M-Thermo/M-Thermo.ino.d1_mini.bin`). You can build & export that file using Arduino IDE: `Sketch -> Export compiled Binary`.
 
 
-### Shiny video of how I did my thermostats
+## Shiny video of how I built my thermostats
 
 Because why not?
 
