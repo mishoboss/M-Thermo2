@@ -10,10 +10,9 @@
 
 #define PIN_RESET 255  //
 #define DC_JUMPER 0  // I2C Addres: 0 - 0x3C, 1 - 0x3D
-#define TEMP_DELTA 1 // delta for thermostat logic
 
 #define DEVICE_MODEL "M-Thermo"
-#define FW_VERSION "1.0.4"
+#define FW_VERSION "1.0.7"
 
 uint8_t bender [] = {
 0x00, 0x00, 0xFC, 0xFE, 0xFF, 0xAB, 0xAB, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -83,7 +82,8 @@ PushButton buttonDown = PushButton(12);
 
 float humd;
 float temp;
-float tempCalibration = -4.0;
+float tempDelta = 0.5; // delta for thermostat logic
+float tempCalibration = -6.5;
 int offValue = 15;
 int setpoint = offValue;
 boolean isHeating = false;
@@ -136,11 +136,11 @@ void readSensor() {
 }
 
 void controlRelay(){
-  if (temp < (setpoint - TEMP_DELTA)) {
+  if (temp < (setpoint - tempDelta)) {
     digitalWrite(relayPin, HIGH);
     isHeating = true;
   }  
-  if (temp > (setpoint + TEMP_DELTA)) {
+  if (temp > (setpoint + tempDelta)) {
     digitalWrite(relayPin, LOW);
     isHeating = false;
   } 
