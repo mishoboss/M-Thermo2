@@ -10,9 +10,10 @@
 
 #define PIN_RESET 255  //
 #define DC_JUMPER 0  // I2C Addres: 0 - 0x3C, 1 - 0x3D
+#define TEMP_DELTA 1 // delta for thermostat logic
 
 #define DEVICE_MODEL "M-Thermo"
-#define FW_VERSION "1.0.7"
+#define FW_VERSION "1.0.10"
 
 uint8_t bender [] = {
 0x00, 0x00, 0xFC, 0xFE, 0xFF, 0xAB, 0xAB, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -82,10 +83,9 @@ PushButton buttonDown = PushButton(12);
 
 float humd;
 float temp;
-float tempDelta = 0.5; // delta for thermostat logic
-float tempCalibration = -6.5;
+float tempCalibration = -4.0;
 int offValue = 15;
-int setpoint = offValue;
+unsigned long setpoint = offValue;
 boolean isHeating = false;
 
 
@@ -95,15 +95,13 @@ boolean isHeating = false;
 
 int relayPin = D7;
 
-
-
-
 boolean resetFlag = false;
 unsigned long lastTemperatureSent = 0;
 
 HomieNode temperatureNode("temperature", "temperature");
 HomieNode setpointNode("setpoint", "temperature");
 HomieNode humidityNode("humidity", "humidity");
+HomieNode isheatingNode("isheating", "switch");
 
 
 void setupHandler() {
@@ -112,8 +110,33 @@ void setupHandler() {
   humidityNode.setProperty("unit").send("%");
 }
 
+bool setpointChangeHandler(HomieRange range, String value) {  
+  unsigned long numericValue = value.toInt();
+  
+  if(numericValue == 0){
+    return false;
+  }
+  
+  if (numericValue < 15) {
+    numericValue = 15;
+  }
+
+  if (numericValue > 28) {
+    numericValue = 28;
+  }
+  setpoint = numericValue;
+  resetDebounseButtonsTask();
+  if(!isDisplayOn){
+      isDisplayOn = true;
+      oled.command(DISPLAYON); 
+  }
+  printDashboard();
+  setpointNode.setProperty("value").send(value);
+  return true;
+}
+
+
 void readSensor() {
-  Serial.println("-------------");
   humd = tempHumSensor.readHumidity();
   temp = tempHumSensor.readTemperature();
   temp = temp+tempCalibration;
@@ -124,6 +147,8 @@ void readSensor() {
   if(Homie.isConnected()){
     temperatureNode.setProperty("value").send(String(temp));
     humidityNode.setProperty("value").send(String(humd));
+    setpointNode.setProperty("value").send(String(setpoint));
+    isheatingNode.setProperty("value").send(isHeating ? "heating" : "standby");
   }
 
   Serial.print(" Temperature:");
@@ -136,11 +161,11 @@ void readSensor() {
 }
 
 void controlRelay(){
-  if (temp < (setpoint - tempDelta)) {
+  if (temp < (setpoint - TEMP_DELTA)) {
     digitalWrite(relayPin, HIGH);
     isHeating = true;
   }  
-  if (temp > (setpoint + tempDelta)) {
+  if (temp > (setpoint + TEMP_DELTA)) {
     digitalWrite(relayPin, LOW);
     isHeating = false;
   } 
@@ -302,8 +327,37 @@ void turnOffScreen(){
     if(isDisplayOn){
       isDisplayOn = false;
       oled.command(DISPLAYOFF);
+      
+      // write setpoint to memory
+      unsigned long storedSetpoint = EEPROMReadlong(0);
+      if(storedSetpoint != setpoint){
+        EEPROMWritelong(0, setpoint);
+        EEPROM.commit();
+      }
     }
   }
+}
+
+void EEPROMWritelong(int address, long value){
+
+  byte four = (value & 0xFF);
+  byte three = ((value >> 8) & 0xFF);
+  byte two = ((value >> 16) & 0xFF);
+  byte one = ((value >> 24) & 0xFF);
+  
+  EEPROM.write(address, four);
+  EEPROM.write(address + 1, three);
+  EEPROM.write(address + 2, two);
+  EEPROM.write(address + 3, one);
+}
+
+long EEPROMReadlong(long address){
+    long four = EEPROM.read(address);
+    long three = EEPROM.read(address + 1);
+    long two = EEPROM.read(address + 2);
+    long one = EEPROM.read(address + 3);
+
+    return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
 }
 
 void resetDebounseButtonsTask(){
@@ -386,6 +440,7 @@ void setup() {
   resetFlag = false;
   serviceScreen = false;
   isDisplayOn = true;
+  EEPROM.begin(512);
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, LOW);
   oled.begin();
@@ -393,11 +448,15 @@ void setup() {
   oled.setFontType(3);                                      
   oled.setCursor(14,24);                                      
   oled.print("Loading...");
-  oled.display();  
+  oled.display();
 
-  //runner.init();
-  //runner.addTask(t1);
-  //t1.enable();
+  unsigned long storedSetpoint = EEPROMReadlong(0);
+  
+  if (storedSetpoint < 15 || storedSetpoint > 28) {
+    storedSetpoint = 15;
+  }
+  
+  setpoint = storedSetpoint;
   
   buttonUp.configureButton(configurePushButton);
   buttonDown.configureButton(configurePushButton);
@@ -418,10 +477,12 @@ void setup() {
   temperatureNode.advertise("value");
 
   setpointNode.advertise("unit");
-  setpointNode.advertise("value");
+  setpointNode.advertise("value").settable(setpointChangeHandler);
 
   humidityNode.advertise("unit");
   humidityNode.advertise("value");
+
+  isheatingNode.advertise("value");
 
   tempHumSensor.begin();
   
